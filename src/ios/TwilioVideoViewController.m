@@ -31,9 +31,6 @@
 
 #pragma mark Video SDK components
 
-@property (nonatomic, strong) TVICameraCapturer *camera;
-@property (nonatomic, strong) TVILocalVideoTrack *localVideoTrack;
-@property (nonatomic, strong) TVILocalAudioTrack *localAudioTrack;
 @property (nonatomic, strong) TVIParticipant *participant;
 @property (nonatomic, weak) TVIVideoView *remoteView;
 @property (nonatomic, strong) TVIRoom *room;
@@ -42,14 +39,8 @@
 
 
 
-// `TVIVideoView` created from a storyboard
-@property (weak, nonatomic) IBOutlet TVIVideoView *previewView;
-
 @property (nonatomic, weak) IBOutlet UIButton *disconnectButton;
 @property (nonatomic, weak) IBOutlet UILabel *messageLabel;
-@property (nonatomic, weak) IBOutlet UIButton *micButton;
-@property (nonatomic, weak) IBOutlet UIButton *flipCameraButton;
-@property (nonatomic, weak) IBOutlet UIButton *videoButton;
 
 @end
 
@@ -64,10 +55,6 @@
     
     // Configure access token manually for testing, if desired! Create one manually in the console
     //  self.accessToken = @"TWILIO_ACCESS_TOKEN";
-    
-    
-    // Preview our local camera track in the local video preview view.
-    [self startPreview];
 }
 
 #pragma mark - Public
@@ -88,98 +75,16 @@
     [self dismissViewControllerAnimated:true completion:nil];
 }
 
-- (IBAction)micButtonPressed:(id)sender {
-    if (self.localAudioTrack) {
-        self.localAudioTrack.enabled = !self.localAudioTrack.isEnabled;
-        
-        if (self.localAudioTrack.isEnabled) {
-            [self.micButton setImage:[UIImage imageNamed:@"microphone-filled-50.png"] forState:UIControlStateNormal];
-        } else {
-            [self.micButton setImage:[UIImage imageNamed:@"mute-unmute-filled-50.png"] forState:UIControlStateNormal];
-        }
-    }
-}
-
-- (IBAction)flipcameraButtonPressed:(id)sender {
-    if(self.localVideoTrack){
-        //  self.flipCameraButton.selected = !self.flipCameraButton.selected;
-        //  self.flipCameraButton.alpha = self.flipCameraButton.selected ? 0.7 : 1;
-        [self flipCamera];
-    }
-}
-
-- (IBAction)videoButtonPressed:(id)sender {
-    if(self.localVideoTrack){
-        self.localVideoTrack.enabled = !self.localVideoTrack.isEnabled;
-        
-        if(self.localVideoTrack.isEnabled){
-            [self.videoButton setImage:[UIImage imageNamed:@"video-call-filled-50.png"] forState:UIControlStateNormal];
-        }else {
-            [self.videoButton setImage:[UIImage imageNamed:@"no-video-filled-50.png"] forState:UIControlStateNormal];
-        }
-    }
-}
-
 #pragma mark - Private
-
-- (void)startPreview {
-    // TVICameraCapturer is not supported with the Simulator.
-    if ([PlatformUtils isSimulator]) {
-        [self.previewView removeFromSuperview];
-        return;
-    }
-    
-    self.camera = [[TVICameraCapturer alloc] initWithSource:TVICameraCaptureSourceFrontCamera delegate:self];
-    self.localVideoTrack = [TVILocalVideoTrack trackWithCapturer:self.camera];
-    if (!self.localVideoTrack) {
-        //     [self logMessage:@"Failed to add video track"];
-    } else {
-        // Add renderer to video track for local preview
-        [self.localVideoTrack addRenderer:self.previewView];
-    }
-}
-
-- (void)flipCamera {
-    if (self.camera.source == TVICameraCaptureSourceFrontCamera) {
-        [self.camera selectSource:TVICameraCaptureSourceBackCameraWide];
-    } else {
-        [self.camera selectSource:TVICameraCaptureSourceFrontCamera];
-    }
-}
-
-- (void)prepareLocalMedia {
-    
-    // We will share local audio and video when we connect to room.
-    
-    // Create an audio track.
-    if (!self.localAudioTrack) {
-        self.localAudioTrack = [TVILocalAudioTrack track];
-        
-        if (!self.localAudioTrack) {
-            //         [self logMessage:@"Failed to add audio track"];
-        }
-    }
-    
-    // Create a video track which captures from the camera.
-    if (!self.localVideoTrack) {
-        [self startPreview];
-    }
-}
 
 - (void)doConnect:(NSString*)room {
     if ([self.accessToken isEqualToString:@"TWILIO_ACCESS_TOKEN"]) {
         //   [self logMessage:@"Please provide a valid token to connect to a room"];
         return;
     }
-    // Prepare local media which we will share with Room Participants.
-    [self prepareLocalMedia];
-    
+
     TVIConnectOptions *connectOptions = [TVIConnectOptions optionsWithToken:self.accessToken
                                                                       block:^(TVIConnectOptionsBuilder * _Nonnull builder) {
-                                                                          
-                                                                          // Use the local media that we prepared earlier.
-                                                                          builder.audioTracks = self.localAudioTrack ? @[ self.localAudioTrack ] : @[ ];
-                                                                          builder.videoTracks = self.localVideoTrack ? @[ self.localVideoTrack ] : @[ ];
                                                                           
                                                                           // The name of the Room where the Client will attempt to connect to. Please note that if you pass an empty
                                                                           // Room `name`, the Client will create one for you. You can get the name or sid from any connected Room.
@@ -363,12 +268,6 @@
 - (void)videoView:(TVIVideoView *)view videoDimensionsDidChange:(CMVideoDimensions)dimensions {
     NSLog(@"Dimensions changed to: %d x %d", dimensions.width, dimensions.height);
     [self.view setNeedsLayout];
-}
-
-#pragma mark - TVICameraCapturerDelegate
-
-- (void)cameraCapturer:(TVICameraCapturer *)capturer didStartWithSource:(TVICameraCaptureSource)source {
-    self.previewView.mirror = (source == TVICameraCaptureSourceFrontCamera);
 }
 
 @end
