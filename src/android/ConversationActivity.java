@@ -22,9 +22,7 @@ import com.twilio.video.AudioCodec;
 import com.twilio.video.CameraCapturer;
 import com.twilio.video.CameraCapturer.CameraSource;
 import com.twilio.video.ConnectOptions;
-import com.twilio.video.LocalAudioTrack;
 import com.twilio.video.LocalParticipant;
-import com.twilio.video.LocalVideoTrack;
 import com.twilio.video.RemoteAudioTrack;
 import com.twilio.video.RemoteAudioTrackPublication;
 import com.twilio.video.RemoteDataTrack;
@@ -79,14 +77,8 @@ public class ConversationActivity extends AppCompatActivity {
      */
     private TextView identityTextView;
     private CameraCapturer cameraCapturer;
-    private LocalAudioTrack localAudioTrack;
-    private LocalVideoTrack localVideoTrack;
     private FloatingActionButton connectActionFab;
     private FloatingActionButton disconnectActionFab;
-    private FloatingActionButton switchCameraActionFab;
-    private FloatingActionButton localVideoActionFab;
-    private FloatingActionButton muteActionFab;
-    private FloatingActionButton speakerActionFab;
     private AudioManager audioManager;
     private String participantIdentity;
 

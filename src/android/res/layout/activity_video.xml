@@ -18,6 +18,14 @@
         android:orientation="horizontal" >
 
         <android.support.design.widget.FloatingActionButton
+            android:id="@+id/connect_action_fab"
+            app:backgroundTint="@color/colorGreen"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/fab_margin"
+            android:src="@drawable/ic_call_white_24px" />
+
+        <android.support.design.widget.FloatingActionButton
             android:id="@+id/disconnect_action_fab"
             app:backgroundTint="@color/colorRed"
             android:layout_width="wrap_content"
