@@ -116,11 +116,6 @@ public class ConversationActivity extends AppCompatActivity {
         this.remoteName =   intent.getStringExtra("remoteName");
 
         connectToRoom(roomId);
-
-        /*
-         * Set the initial state of the UI
-         */
-        intializeUI();
     }
 
     @Override
@@ -250,7 +245,6 @@ public class ConversationActivity extends AppCompatActivity {
                 // Only reinitialize the UI if disconnect was not called from onDestroy()
                 if (!disconnectedFromOnDestroy) {
                     configureAudio(false);
-                    intializeUI();
                     moveLocalVideoToPrimaryView();
                 }
             }
@@ -263,6 +257,24 @@ public class ConversationActivity extends AppCompatActivity {
             @Override
             public void onParticipantDisconnected(Room room, RemoteParticipant remoteParticipant) {
                 removeParticipant(remoteParticipant);
+            }
+
+            @Override
+            public void onRecordingStarted(Room room) {
+                /*
+                 * Indicates when media shared to a Room is being recorded. Note that
+                 * recording is only available in our Group Rooms developer preview.
+                 */
+                Log.d(TAG, "onRecordingStarted");
+            }
+
+            @Override
+            public void onRecordingStopped(Room room) {
+                /*
+                 * Indicates when media shared to a Room is no longer being recorded. Note that
+                 * recording is only available in our Group Rooms developer preview.
+                 */
+                Log.d(TAG, "onRecordingStopped");
             }
         };
     }
@@ -356,6 +368,7 @@ public class ConversationActivity extends AppCompatActivity {
             public void onVideoTrackDisabled(RemoteParticipant remoteParticipant, RemoteVideoTrackPublication remoteVideoTrackPublication) {
 
             }
+
         };
     }
 
@@ -370,7 +383,6 @@ public class ConversationActivity extends AppCompatActivity {
                     room.disconnect();
 					disconnectedFromOnDestroy = true;
                 }
-                //intializeUI();
                 finish();
             }
         };
