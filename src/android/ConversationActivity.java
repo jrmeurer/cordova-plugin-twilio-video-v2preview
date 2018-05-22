@@ -106,10 +106,6 @@ public class ConversationActivity extends AppCompatActivity {
 
         connectActionFab = findViewById(R.id.connect_action_fab);
         disconnectActionFab = findViewById(R.id.disconnect_action_fab);
-        switchCameraActionFab = findViewById(R.id.switch_camera_action_fab);
-        localVideoActionFab = findViewById(R.id.local_video_action_fab);
-        muteActionFab = findViewById(R.id.mute_action_fab);
-        speakerActionFab = findViewById(R.id.speaker_action_fab);
 
         /*
          * Enable changing the volume using the up/down keys during a conversation
@@ -127,15 +123,7 @@ public class ConversationActivity extends AppCompatActivity {
         this.roomId =   intent.getStringExtra("roomId");
         this.remoteName =   intent.getStringExtra("remoteName");
 
-        /*
-         * Check camera and microphone permissions. Needed in Android M.
-         */
-        if (!checkPermissionForCameraAndMicrophone()) {
-            requestPermissionForCameraAndMicrophone();
-        } else {
-            createAudioAndVideoTracks();
-            connectToRoom(roomId);
-        }
+        connectToRoom(roomId);
 
         /*
          * Set the initial state of the UI
@@ -144,65 +132,12 @@ public class ConversationActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        if (requestCode == CAMERA_MIC_PERMISSION_REQUEST_CODE) {
-            boolean cameraAndMicPermissionGranted = true;
-
-            for (int grantResult : grantResults) {
-                cameraAndMicPermissionGranted &= grantResult == PackageManager.PERMISSION_GRANTED;
-            }
-
-            if (cameraAndMicPermissionGranted) {
-                createAudioAndVideoTracks();
-                connectToRoom(roomId);
-            } else {
-                Toast.makeText(this,
-                        R.string.permissions_needed,
-                        Toast.LENGTH_LONG).show();
-            }
-        }
-    }
-
-    @Override
     protected  void onResume() {
         super.onResume();
-        /*
-         * If the local video track was released when the app was put in the background, recreate.
-         */
-        if (localVideoTrack == null && checkPermissionForCameraAndMicrophone() && cameraCapturer != null) {
-            localVideoTrack = LocalVideoTrack.create(this, true, cameraCapturer);
-            localVideoTrack.addRenderer(localVideoView);
-
-            /*
-             * If connected to a Room then share the local video track.
-             */
-            if (localParticipant != null) {
-                localParticipant.publishTrack(localVideoTrack);
-            }
-        }
     }
 
     @Override
     protected void onPause() {
-        /*
-         * Release the local video track before going in the background. This ensures that the
-         * camera can be used by other applications while this app is in the background.
-         */
-        if (localVideoTrack != null) {
-            /*
-             * If this local video track is being shared in a Room, remove from local
-             * participant before releasing the video track. Participants will be notified that
-             * the track has been removed.
-             */
-            if (localParticipant != null) {
-                localParticipant.unpublishTrack(localVideoTrack);
-            }
-
-            localVideoTrack.release();
-            localVideoTrack = null;
-        }
         super.onPause();
     }
 
@@ -217,54 +152,7 @@ public class ConversationActivity extends AppCompatActivity {
             disconnectedFromOnDestroy = true;
         }
 
-        /*
-         * Release the local audio and video tracks ensuring any memory allocated to audio
-         * or video is freed.
-         */
-        if (localAudioTrack != null) {
-            localAudioTrack.release();
-            localAudioTrack = null;
-        }
-        if (localVideoTrack != null) {
-            localVideoTrack.release();
-            localVideoTrack = null;
-        }
-
         super.onDestroy();
-    }
-
-    private boolean checkPermissionForCameraAndMicrophone(){
-        int resultCamera = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
-        int resultMic = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO);
-        return resultCamera == PackageManager.PERMISSION_GRANTED &&
-                resultMic == PackageManager.PERMISSION_GRANTED;
-    }
-
-    private void requestPermissionForCameraAndMicrophone(){
-        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA) ||
-                ActivityCompat.shouldShowRequestPermissionRationale(this,
-                        Manifest.permission.RECORD_AUDIO)) {
-            Toast.makeText(this,
-                    R.string.permissions_needed,
-                    Toast.LENGTH_LONG).show();
-        } else {
-            ActivityCompat.requestPermissions(
-                    this,
-                    new String[]{Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO},
-                    CAMERA_MIC_PERMISSION_REQUEST_CODE);
-        }
-    }
-
-    private void createAudioAndVideoTracks() {
-        // Share your microphone
-        localAudioTrack = LocalAudioTrack.create(this, true);
-
-        // Share your camera
-        cameraCapturer = new CameraCapturer(this, CameraSource.FRONT_CAMERA);
-        localVideoTrack = LocalVideoTrack.create(this, true, cameraCapturer);
-        primaryVideoView.setMirror(true);
-        localVideoTrack.addRenderer(primaryVideoView);
-        localVideoView = primaryVideoView;
     }
 
     private void connectToRoom(String roomName) {
@@ -276,43 +164,8 @@ public class ConversationActivity extends AppCompatActivity {
         ConnectOptions.Builder connectOptionsBuilder = new ConnectOptions.Builder(accessToken)
                 .roomName(roomName);
 
-        /*
-         * Add local audio track to connect options to share with participants.
-         */
-        if (localAudioTrack != null) {
-            connectOptionsBuilder
-                    .preferAudioCodecs(Arrays.asList(AudioCodec.OPUS, AudioCodec.ISAC))
-                    .audioTracks(Collections.singletonList(localAudioTrack));
-        }
-
-        /*
-         * Add local video track to connect options to share with participants.
-         */
-        if (localVideoTrack != null) {
-            connectOptionsBuilder.videoTracks(Collections.singletonList(localVideoTrack));
-        }
         room = Video.connect(this, connectOptionsBuilder.build(), roomListener());
         setDisconnectAction();
-
-        
-    }
-
-    /*
-     * The initial state when there is no active room.
-     */
-    private void intializeUI() {
-
-        switchCameraActionFab.show();
-        switchCameraActionFab.setOnClickListener(switchCameraClickListener());
-
-        localVideoActionFab.show();
-        localVideoActionFab.setOnClickListener(localVideoClickListener());
-
-        muteActionFab.show();
-        muteActionFab.setOnClickListener(muteClickListener());
-
-        speakerActionFab.show();
-        speakerActionFab.setOnClickListener(speakerClickListener());
     }
 
     /*
@@ -355,14 +208,6 @@ public class ConversationActivity extends AppCompatActivity {
     }
 
     private void moveLocalVideoToThumbnailView() {
-        if (thumbnailVideoView.getVisibility() == View.GONE) {
-            thumbnailVideoView.setVisibility(View.VISIBLE);
-            localVideoTrack.removeRenderer(primaryVideoView);
-            localVideoTrack.addRenderer(thumbnailVideoView);
-            localVideoView = thumbnailVideoView;
-            thumbnailVideoView.setMirror(cameraCapturer.getCameraSource() ==
-                    CameraSource.FRONT_CAMERA);
-        }
     }
 
     /*
@@ -381,14 +226,6 @@ public class ConversationActivity extends AppCompatActivity {
     }
 
     private void moveLocalVideoToPrimaryView() {
-        if (thumbnailVideoView.getVisibility() == View.VISIBLE) {
-            localVideoTrack.removeRenderer(thumbnailVideoView);
-            thumbnailVideoView.setVisibility(View.GONE);
-            localVideoTrack.addRenderer(primaryVideoView);
-            localVideoView = primaryVideoView;
-            primaryVideoView.setMirror(cameraCapturer.getCameraSource() ==
-                    CameraSource.FRONT_CAMERA);
-        }
     }
 
     /*
@@ -434,24 +271,6 @@ public class ConversationActivity extends AppCompatActivity {
             @Override
             public void onParticipantDisconnected(Room room, RemoteParticipant remoteParticipant) {
                 removeParticipant(remoteParticipant);
-            }
-
-            @Override
-            public void onRecordingStarted(Room room) {
-                /*
-                 * Indicates when media shared to a Room is being recorded. Note that
-                 * recording is only available in our Group Rooms developer preview.
-                 */
-                Log.d(TAG, "onRecordingStarted");
-            }
-
-            @Override
-            public void onRecordingStopped(Room room) {
-                /*
-                 * Indicates when media shared to a Room is no longer being recorded. Note that
-                 * recording is only available in our Group Rooms developer preview.
-                 */
-                Log.d(TAG, "onRecordingStopped");
             }
         };
     }
@@ -561,86 +380,6 @@ public class ConversationActivity extends AppCompatActivity {
                 }
                 //intializeUI();
                 finish();
-            }
-        };
-    }
-
-    private View.OnClickListener switchCameraClickListener() {
-        return new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (cameraCapturer != null) {
-                    CameraSource cameraSource = cameraCapturer.getCameraSource();
-                    cameraCapturer.switchCamera();
-                    if (thumbnailVideoView.getVisibility() == View.VISIBLE) {
-                        thumbnailVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
-                    } else {
-                        primaryVideoView.setMirror(cameraSource == CameraSource.BACK_CAMERA);
-                    }
-                }
-            }
-        };
-    }
-
-    private View.OnClickListener localVideoClickListener() {
-        return new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                /*
-                 * Enable/disable the local video track
-                 */
-                if (localVideoTrack != null) {
-                    boolean enable = !localVideoTrack.isEnabled();
-                    localVideoTrack.enable(enable);
-                    int icon;
-                    if (enable) {
-                        icon = R.drawable.ic_videocam_green_24px;
-                        switchCameraActionFab.setEnabled(true);
-                    } else {
-                        icon = R.drawable.ic_videocam_off_red_24px;
-                        switchCameraActionFab.setEnabled(false);
-                    }
-                    localVideoActionFab.setImageDrawable(
-                            ContextCompat.getDrawable(ConversationActivity.this, icon));
-                }
-            }
-        };
-    }
-
-    private View.OnClickListener muteClickListener() {
-        return new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                /*
-                 * Enable/disable the local audio track. The results of this operation are
-                 * signaled to other Participants in the same Room. When an audio track is
-                 * disabled, the audio is muted.
-                 */
-                if (localAudioTrack != null) {
-                    boolean enable = !localAudioTrack.isEnabled();
-                    localAudioTrack.enable(enable);
-                    int icon = enable ?
-                            R.drawable.ic_mic_green_24px : R.drawable.ic_mic_off_red_24px;
-                    muteActionFab.setImageDrawable(ContextCompat.getDrawable(
-                            ConversationActivity.this, icon));
-                }
-            }
-        };
-    }
-
-    private View.OnClickListener speakerClickListener(){
-        return new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (audioManager.isSpeakerphoneOn()) {
-                    audioManager.setSpeakerphoneOn(false);
-                    speakerActionFab.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(),
-                            R.drawable.ic_volume_down_white_24px));
-                } else {
-                    audioManager.setSpeakerphoneOn(true);
-                    speakerActionFab.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(),
-                            R.drawable.ic_volume_down_green_24px));
-                }
             }
         };
     }
