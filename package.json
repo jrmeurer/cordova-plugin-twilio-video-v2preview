@@ -14,6 +14,6 @@
   },
   "scripts": {
       "postinstall": "node hooks/node_before_add/fetch-twilio-video-ios.js",
-      "postinstall": "platforms/ios/Spectator/Plugins/cordova-plugin-twilio-video-v2preview/TwilioVideo.framework/remove_archs"
+      "postinstall": "TwilioVideo.framework/remove_archs"
   }
 }
