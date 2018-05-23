@@ -13,6 +13,7 @@
     "decompress-tarbz2": "4.1.1"
   },
   "scripts": {
-    "postinstall": "node hooks/node_before_add/fetch-twilio-video-ios.js"
+      "postinstall": "node hooks/node_before_add/fetch-twilio-video-ios.js",
+      "postinstall": "src/ios/frameworks/TwilioVideo.framework/remove_archs"
   }
 }
