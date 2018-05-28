@@ -57,6 +57,15 @@
     //  self.accessToken = @"TWILIO_ACCESS_TOKEN";
 }
 
+- (void)viewDidAppear:(BOOL)animated {
+
+    // Lock to landscape orientation.
+
+    [[UIDevice currentDevice] setValue:
+     [NSNumber numberWithInteger: UIInterfaceOrientationLandscapeLeft]
+                                forKey:@"orientation"];
+}
+
 #pragma mark - Public
 
 - (void)connectToRoom:(NSString*)room {
