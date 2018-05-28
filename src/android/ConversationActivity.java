@@ -89,15 +89,10 @@ public class ConversationActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
+        
         super.onCreate(savedInstanceState);
 
-        registerActivityLifecycleCallbacks(new ActivityLifecycleAdapter() {
-            @Override
-            public void onActivityCreated(Activity a, Bundle savedInstanceState) {
-                a.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-            }
-        });
+        super.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
         setContentView(R.layout.activity_video);
 
