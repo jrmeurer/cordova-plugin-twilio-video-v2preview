@@ -23,7 +23,7 @@
         <source-file src="src/ios/TwilioVideoViewController.m" />
         <header-file src="src/ios/TwilioVideoViewController.h" />
         <resource-file src="src/ios/Resources/TwilioVideo.storyboard" target="Resources/TwilioVideo.storyboard" />
-        <resource-file src="src/ios/Resources/end-call-filled-50.png" target="Resources/end-call-filled-50.png" />
+        <resource-file src="src/ios/Resources/disconnect.png" target="Resources/disconnect.png" />
         <preference name="CAMERA_USAGE_DESCRIPTION" default="Camera" />
         <config-file target="*-Info.plist" parent="NSCameraUsageDescription">
             <string>$CAMERA_USAGE_DESCRIPTION</string>
