@@ -31,7 +31,7 @@
 
 #pragma mark Video SDK components
 
-@property (nonatomic, strong) TVIParticipant *participant;
+@property (nonatomic, strong) TVIParticipant *viewedParticipant;
 @property (nonatomic, weak) TVIVideoView *remoteView;
 @property (nonatomic, strong) TVIRoom *room;
 
@@ -159,12 +159,12 @@
 }
 
 - (void)cleanupRemoteParticipant {
-    if (self.participant) {
-        if ([self.participant.videoTracks count] > 0) {
-            [self.participant.videoTracks[0] removeRenderer:self.remoteView];
+    if (self.viewedParticipant) {
+        if ([self.viewedParticipant.videoTracks count] > 0) {
+            [self.viewedParticipant.videoTracks[0] removeRenderer:self.remoteView];
             [self.remoteView removeFromSuperview];
         }
-        self.participant = nil;
+        self.viewedParticipant = nil;
     }
 }
 
@@ -182,10 +182,9 @@
     // [self logMessage:[NSString stringWithFormat:@"Connected to room %@ as %@", room.name, room.localParticipant.identity]];
     [self logMessage:@"Waiting on participant to join"];
     self.messageLabel.text = self.remoteParticipantName;
-    if (room.participants.count > 0) {
-        self.participant = room.participants[0];
-        self.participant.delegate = self;
-        [self logMessage:@" "];
+    self.viewedParticipant = nil;
+    for (TVIParticipant* participant in room.participants) {
+        participant.delegate = self;
     }
 }
 
@@ -196,6 +195,7 @@
     self.room = nil;
     
     [self showRoomUI:NO];
+    [self dismissViewControllerAnimated:true completion:nil];
 }
 
 - (void)room:(TVIRoom *)room didFailToConnectWithError:(nonnull NSError *)error{
@@ -204,20 +204,17 @@
     self.room = nil;
     
     [self showRoomUI:NO];
+    [self dismissViewControllerAnimated:true completion:nil];
 }
 
 - (void)room:(TVIRoom *)room participantDidConnect:(TVIParticipant *)participant {
-    if (!self.participant) {
-        self.participant = participant;
-        self.participant.delegate = self;
-    }
+    participant.delegate = self;
     //   [self logMessage:[NSString stringWithFormat:@"Room %@ participant %@ connected", room.name, participant.identity]];
-    [self logMessage:@" "];
 }
 
 - (void)room:(TVIRoom *)room participantDidDisconnect:(TVIParticipant *)participant {
     // [self logMessage:[NSString stringWithFormat:@"Room %@ participant %@ disconnected", room.name, participant.identity]];
-    if (self.participant == participant) {
+    if (self.viewedParticipant == participant) {
         [self logMessage:@"Participant disconnected"];
         [self cleanupRemoteParticipant];
         [self dismissViewControllerAnimated:true completion:nil];
@@ -228,8 +225,10 @@
 
 - (void)participant:(TVIParticipant *)participant addedVideoTrack:(TVIVideoTrack *)videoTrack {
     //   [self logMessage:[NSString stringWithFormat:@"Participant %@ added video track.", participant.identity]];
-    
-    if (self.participant == participant) {
+  
+    if (self.viewedParticipant != participant) {
+		[self cleanupRemoteParticipant];
+        self.viewedParticipant = participant;
         [self setupRemoteView];
         [videoTrack addRenderer:self.remoteView];
     }
@@ -238,9 +237,13 @@
 - (void)participant:(TVIParticipant *)participant removedVideoTrack:(TVIVideoTrack *)videoTrack {
     //   [self logMessage:[NSString stringWithFormat:@"Participant %@ removed video track.", participant.identity]];
     
-    if (self.participant == participant) {
+    if (self.viewedParticipant == participant) {
         [videoTrack removeRenderer:self.remoteView];
         [self.remoteView removeFromSuperview];
+        [self cleanupRemoteParticipant];
+        [self dismissViewControllerAnimated:true completion:nil];
+		// TODO: This will kick us out....some ideas:
+		//  1. Search for another participant with a video track (requires saving all participants or tracking in addedVideoTrack)
     }
 }
 
