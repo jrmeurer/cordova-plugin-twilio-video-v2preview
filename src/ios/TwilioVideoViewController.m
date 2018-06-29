@@ -216,12 +216,12 @@
 }
 
 - (void)room:(TVIRoom *)room participantDidDisconnect:(TVIParticipant *)participant {
-    if (self.participant == participant) {
-        [self cleanupRemoteParticipant];
-    }
     // [self logMessage:[NSString stringWithFormat:@"Room %@ participant %@ disconnected", room.name, participant.identity]];
-    [self logMessage:@"Participant disconnected"];
-    [self dismissViewControllerAnimated:true completion:nil];
+    if (self.participant == participant) {
+        [self logMessage:@"Participant disconnected"];
+        [self cleanupRemoteParticipant];
+        [self dismissViewControllerAnimated:true completion:nil];
+    }
 }
 
 #pragma mark - TVIParticipantDelegate
