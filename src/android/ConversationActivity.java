@@ -264,7 +264,6 @@ public class ConversationActivity extends AppCompatActivity
 
                 for (RemoteParticipant participant : room.getRemoteParticipants()) {
                     addParticipant(participant);
-                    break;
                 }
                 Log.i(TAG, "Connected to " + room.getName());
             }
