@@ -74,7 +74,7 @@ rm "$FRAMEWORK_EXECUTABLE_PATH"
 mv "$FRAMEWORK_EXECUTABLE_PATH-merged" "$FRAMEWORK_EXECUTABLE_PATH"
 done`;
 
-    var buildPhase = myProj.addBuildPhase([], 'PBXShellScriptBuildPhase', 'Run Script', myProj.getFirstTarget().uuid, options).buildPhase;
+    var buildPhase = myProj.addBuildPhase([], 'PBXShellScriptBuildPhase', 'Trim Twilio framework', myProj.getFirstTarget().uuid, options).buildPhase;
     buildPhase['runOnlyForDeploymentPostprocessing'] = 0;
 
     fs.writeFileSync(projectPath, myProj.writeSync());
