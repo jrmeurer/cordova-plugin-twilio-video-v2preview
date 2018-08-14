@@ -450,6 +450,7 @@ public class ConversationActivity extends AppCompatActivity
     }
     
     private void setNavVisibility(boolean visible) {
+        
         int newVis = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
@@ -473,6 +474,10 @@ public class ConversationActivity extends AppCompatActivity
 
         // Set the new desired visibility.
         view.setSystemUiVisibility(newVis);
+        
+        disconnectActionFab.animate()
+            .alpha(visible ? 1.0f : 0.0f)
+            .setDuration(400);
     }
 
 }
