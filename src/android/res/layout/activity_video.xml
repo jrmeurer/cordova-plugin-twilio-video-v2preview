@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="false">
 
 
     <include layout="@layout/content_video" />
@@ -14,7 +14,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
-        android:gravity="center"
+        android:gravity="left"
         android:orientation="horizontal" >
 
         <android.support.design.widget.FloatingActionButton

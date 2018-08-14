@@ -4,9 +4,11 @@ package com.anvay.twiliovideocall;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -43,7 +45,9 @@ import org.webrtc.MediaCodecVideoEncoder;
 import java.util.Arrays;
 import java.util.Collections;
 
-public class ConversationActivity extends AppCompatActivity {
+public class ConversationActivity extends AppCompatActivity
+    implements View.OnSystemUiVisibilityChangeListener, View.OnClickListener {
+    
     private static final int CAMERA_MIC_PERMISSION_REQUEST_CODE = 1;
     private static final String TAG = "VideoActivity";
 
@@ -87,12 +91,25 @@ public class ConversationActivity extends AppCompatActivity {
     private VideoRenderer localVideoView;
     private boolean disconnectedFromOnDestroy;
 
+    Runnable mNavHider = new Runnable() {
+        @Override public void run() {
+            setNavVisibility(false);
+        }
+    };
+    int mLastSystemUiVis;
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_video);
 
+        super.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+
+        setContentView(R.layout.activity_video);
+        
         primaryVideoView = findViewById(R.id.primary_video_view);
+        primaryVideoView.setOnClickListener(this);
+        
         thumbnailVideoView = findViewById(R.id.thumbnail_video_view);
         identityTextView = findViewById(R.id.identity_textview);
 
@@ -112,22 +129,42 @@ public class ConversationActivity extends AppCompatActivity {
         Intent intent = getIntent();
 
         this.accessToken = intent.getStringExtra("token");
-        this.roomId =   intent.getStringExtra("roomId");
-        this.remoteName =   intent.getStringExtra("remoteName");
+        this.roomId = intent.getStringExtra("roomId");
+        this.remoteName = intent.getStringExtra("remoteName");
 
         connectToRoom(roomId);
+
+        this.getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(this);
+        this.setNavVisibility(true);
     }
 
     @Override
-    protected  void onResume() {
-        super.onResume();
+    public void onSystemUiVisibilityChange(int visibility) {
+        // Detect when we go out of nav-hidden mode, to clear our state
+        // back to having the full UI chrome up.  Only do this when
+        // the state is changing and nav is no longer hidden.
+        int diff = mLastSystemUiVis ^ visibility;
+        mLastSystemUiVis = visibility;
+        Log.d(TAG, "onSystemUiVisibilityChange: " + visibility);
+        if ((diff & View.SYSTEM_UI_FLAG_HIDE_NAVIGATION) != 0
+                && (visibility & View.SYSTEM_UI_FLAG_HIDE_NAVIGATION) == 0) {
+            setNavVisibility(true);
+        }
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            setNavVisibility(true);
+        }
     }
 
+    @Override public void onClick(View v) {
+        // Clicking anywhere makes the navigation visible.
+        setNavVisibility(true);
+    }
+    
     @Override
     protected void onDestroy() {
         /*
@@ -227,7 +264,6 @@ public class ConversationActivity extends AppCompatActivity {
 
                 for (RemoteParticipant participant : room.getRemoteParticipants()) {
                     addParticipant(participant);
-                    break;
                 }
                 Log.i(TAG, "Connected to " + room.getName());
             }
@@ -412,4 +448,36 @@ public class ConversationActivity extends AppCompatActivity {
             audioManager.setMicrophoneMute(previousMicrophoneMute);
         }
     }
+    
+    private void setNavVisibility(boolean visible) {
+        
+        int newVis = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+        if (!visible) {
+            newVis |= View.SYSTEM_UI_FLAG_LOW_PROFILE | View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+        }
+
+        // If we are now visible, schedule a timer for us to go invisible.
+        View view = this.getWindow().getDecorView();
+        if (view == null) {
+            return;
+        }
+        if (visible) {
+            Handler h = view.getHandler();
+            if (h != null) {
+                h.removeCallbacks(mNavHider);
+                h.postDelayed(mNavHider, 3000);
+            }
+        }
+
+        // Set the new desired visibility.
+        view.setSystemUiVisibility(newVis);
+        
+        disconnectActionFab.animate()
+            .alpha(visible ? 1.0f : 0.0f)
+            .setDuration(400);
+    }
+
 }
